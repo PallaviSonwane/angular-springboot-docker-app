@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Service
+  db:
+    image: postgres:latest
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: rcpdb
+    networks:
+      - app-network
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  # Hazelcast Service (Custom Dockerfile)
+  hazelcast:
+    build:
+      context: ./HazelcastSever
+      dockerfile: Dockerfile-hz
+    ports:
+      - "5701:5701"
+    networks:
+      - app-network
+
+  # Spring Boot + Angular WAR Service
+  frontend-backend:
+    build:
+      context: ./rcpApp
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+      - hazelcast
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db:5432/rcpdb
+      - SPRING_DATASOURCE_USERNAME=user
+      - SPRING_DATASOURCE_PASSWORD=root
+    networks:
+      - app-network
+
+networks:
+  app-network:
+
+volumes:
+  pgdata:
